@@ -1,5 +1,5 @@
-from app import App
+import app
 
-app = App()
+app = app.App()
 
 app.start()

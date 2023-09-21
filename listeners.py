@@ -16,7 +16,7 @@ class MouseEvent:
 @dataclass
 class KeyboardEvent:
     
-    key: Union[keyboard.KeyCode, keyboard.Key]
+    key: str
     time: float
 
 
@@ -32,7 +32,18 @@ class ListenerManager:
     
     def removeCallback(self, callback: Callable):
         
-        self._callbacks.remove(callback)
+        try:
+            self._callbacks.remove(callback)
+        except ValueError:
+            pass
+
+    def getCallbacks(self):
+        
+        return self._callbacks
+        
+    def removeCallbacks(self):
+        
+        self._callbacks.clear()
 
 
 class KeyboardListenerManager(ListenerManager):
@@ -45,7 +56,7 @@ class KeyboardListenerManager(ListenerManager):
     
     def _getListener(self):
         
-        listener = keyboard.Listener(on_press=self._onPress)
+        listener = keyboard.Listener(on_release=self._onPress)
         listener.daemon = True
         return listener
     
@@ -53,11 +64,23 @@ class KeyboardListenerManager(ListenerManager):
         
         self._onPress(keyboard.KeyCode(char=key))
     
-    def _onPress(self, key):
+    def _getKeyValue(self, key: keyboard.Key | keyboard.KeyCode):
+        
+        if type(key) == keyboard.Key:
+            return key.name
+        elif type(key) == keyboard.KeyCode:
+            return key.char
+    
+    def _onPress(self, key: keyboard.Key | keyboard.KeyCode):
+        
+        event = KeyboardEvent(
+            self._getKeyValue(key),
+            time.time() * 1000
+        )
         
         for callback in self._callbacks:
             
-            callback(KeyboardEvent(key, time))
+            callback(event)
             
     def startListening(self):
         
@@ -94,7 +117,7 @@ class MouseListenerManager(ListenerManager):
         
         for callback in self._callbacks:
             
-            callback(MouseEvent(x, y, button, pressed))
+            callback(MouseEvent(x, y, button, now))
     
     def startListening(self):
         
